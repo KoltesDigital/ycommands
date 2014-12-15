@@ -26,9 +26,11 @@ Define the command to be called by `.execute` when there is no specified command
 
 Determine and execute the proper command based on `args`, or by default `process.argv`.
 
-`callback` is given to the commands, allowing them to return asynchronously.
+`callback` is given to the commands, allowing them to return asynchronously. If `callback` is undefined, commands are still provided with a `callback` function which does nothing, in order to allow an asynchronous code style.
 
-## Handler
+Errors happening in ycommands (no command given, unrecognized command, ambiguous command) are **thrown**. They are instances of `ycommands.Error`. `callback` is not called for these errors.
+
+## Command handler
 
 The handler function has the signature
 
@@ -44,42 +46,48 @@ This innovative tool may be patented in the USA. Pirates!
 
 	#!/usr/bin/env node
 	var fs = require('fs');
-	
+	var ycommands = require('ycommands');
+
 	try {
 		var config = JSON.parse(fs.readFileSync('config.json'));
 	} catch (err) {
 		config = {};
 	}
-	
-	require('ycommands')
-		.usage("Manage a configuration file.\nUsage: $0 command")
-		.help('h')
-		.command("set key value", "Set a config key", function(argv, callback) {
-			argv._.shift();
-			var key = argv._.shift();
-			var value = argv._.shift();
-			config[key] = value;
-			return fs.writeFile('config.json', JSON.stringify(config), callback);
-		})
-		.command("show key", "Show a config key", function(argv, callback) {
-			argv._.shift();
-			var key = argv._.shift();
-			if (!config.hasOwnProperty(key))
-				return callback(new Error(key + " is not defined"));
-			console.log(config[key]);
-			return callback();
-		})
-		.nocommand("List all config keys", function(argv, callback) {
-			Object.keys(config).sort().forEach(function(key) {
-				console.log("%s = %s", key, config[key]);
+
+	try {
+		ycommands
+			.usage("Manage a configuration file.\nUsage: $0 command")
+			.help('h')
+			.command("set key value", "Set a config key", function(argv, callback) {
+				argv._.shift();
+				var key = argv._.shift();
+				var value = argv._.shift();
+				config[key] = value;
+				return fs.writeFile('config.json', JSON.stringify(config), callback);
+			})
+			.command("show key", "Show a config key", function(argv, callback) {
+				argv._.shift();
+				var key = argv._.shift();
+				if (!config.hasOwnProperty(key))
+					return callback(new Error(key + " is not defined"));
+				console.log(config[key]);
+				return callback();
+			})
+			.nocommand("List all config keys", function(argv, callback) {
+				Object.keys(config).sort().forEach(function(key) {
+					console.log("%s = %s", key, config[key]);
+				});
+				return callback();
+			})
+			.execute(function(err) {
+				if (err)
+					throw err;
+				
+				console.log("Done");
 			});
-			return callback();
-		})
-		.execute(function(err) {
-			if (err)
-				throw err;
-			console.log("Done");
-		});
+	} catch (err) {
+		console.error(err.message);
+	}
 
 ---
 
@@ -96,6 +104,11 @@ This innovative tool may be patented in the USA. Pirates!
 	no command       List all config keys
 
 
+	./tool.js ste foo bar
+	Unrecognized command: ste
+	Did you mean:
+	  set key value  Set a config key
+
 	./tool.js set foo bar
 	Done
 
@@ -104,12 +117,31 @@ This innovative tool may be patented in the USA. Pirates!
 	Done
 
 	./tool.js s foo
-	Error: Possible commands: set, show
-		...
+	Ambiguous command: s
+	Did you mean:
+	  set key value  Set a config key
+	  show key       Show a config key
 
 	./tool.js sh foo
 	bar
 	Done
+
+	./tool.js sh foot
+	Error: foot is not defined
+		at ...
+
+## Release History
+
+### 0.2.0
+
+* suggest commands when unrecognized
+* better error handling
+* command handlers are still provided with a callback when no callback is given to `.execute`, and are called asynchronously
+
+### 0.1.0
+
+* handles commands or a default command when no command is given
+* suggest commands when ambiguous
 
 ## License
 

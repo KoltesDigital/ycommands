@@ -1,7 +1,7 @@
 {
   "name": "ycommands",
   "description": "Enhancement of yargs adding command semantics.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "homepage": "https://github.com/Bloutiouf/ycommands",
   "author": {
     "name": "Bloutiouf",
@@ -18,15 +18,16 @@
   "license": "MIT",
   "main": "index.js",
   "dependencies": {
+    "fast-levenshtein": "^1.0.5",
     "yargs": "^1.3.3"
   },
   "keywords": [
     "args",
     "argument",
     "cli",
-	"command",
-	"option",
-	"parse",
+    "command",
+    "option",
+    "parse",
     "parsing",
     "yargs"
   ]
